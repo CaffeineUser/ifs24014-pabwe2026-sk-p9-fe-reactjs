@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delcom Blog - Artikel Teknologi, Pendidikan, dan Gaya Hidup</title>
+    <meta
+      name="description"
+      content="Delcom Blog adalah platform publikasi artikel multi-penulis tentang teknologi, pendidikan, gaya hidup, bisnis, dan opini, dengan asisten penulis berbasis AI."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Terapkan tema sebelum cat pertama agar tidak berkedip. Kunci harus sama dengan useTheme. -->
+    <script>
+      ;(function () {
+        try {
+          var theme = localStorage.getItem('delcom_blog_theme')
+          var dark = theme ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+          var accent = localStorage.getItem('delcom_blog_accent')
+          if (dark) document.documentElement.classList.add('dark')
+          if (accent) document.documentElement.dataset.accent = accent
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body class="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
