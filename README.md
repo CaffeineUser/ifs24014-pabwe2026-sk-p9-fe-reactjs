@@ -47,7 +47,7 @@ VITE_API_URL=https://alamat-backend-anda
 
 Isi dengan base URL backend tanpa akhiran `/api` dan tanpa slash terakhir. Frontend akan memanggil endpoint seperti `https://alamat-backend-anda/api/public/posts`. Setelah menambahkan atau mengubah environment variable, jalankan deployment ulang.
 
-Backend harus tersedia melalui HTTPS dan mengizinkan origin domain frontend melalui CORS. Hosting frontend juga perlu mengarahkan rute SPA (contohnya `/posts/*`, `/author`, `/admin`, `/login`, dan `/register`) kembali ke `index.html` agar halaman bisa dibuka langsung atau di-refresh.
+Backend harus tersedia melalui HTTPS dan mengizinkan origin domain frontend melalui CORS. Aturan Netlify di `public/_redirects` mengarahkan rute SPA (contohnya `/posts/*`, `/author`, `/admin`, `/login`, dan `/register`) kembali ke `index.html`, agar halaman bisa dibuka langsung atau di-refresh.
 
 Jangan commit `.env` atau memasukkan secret backend ke variable `VITE_*`; nilai tersebut dapat dibaca dari browser. `.env.example` aman untuk dibagikan dan `.env` sudah diabaikan Git.
 

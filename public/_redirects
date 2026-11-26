@@ -1,0 +1,5 @@
+/posts/* /index.html 200
+/author /index.html 200
+/admin /index.html 200
+/login /index.html 200
+/register /index.html 200
