@@ -1,0 +1,8 @@
+import { IconClock } from '@tabler/icons-react'
+import { categoryOf, dateOf, slugOf, titleOf } from '../../../helpers/blogHelper'
+
+export default function PostCard({ post, navigate, featured = false }) {
+  const id = slugOf(post)
+  const image = post.cover_image_path || post.cover_image || post.image_url || post.cover || ''
+  return <article className={`post-card ${featured ? 'featured-card' : ''}`}><button className="card-image" onClick={()=>navigate(`/posts/${id}`)} aria-label={`Baca artikel ${titleOf(post)}`} style={image ? { backgroundImage: `linear-gradient(0deg,rgba(12,23,35,.2),transparent),url("${image}")` } : {}}><span className="image-orb">{featured ? '✳' : '✦'}</span>{featured && <span className="image-caption">CERITA PILIHAN EDITOR</span>}</button><div className="post-card-body"><div className="eyebrow-row"><span className="category-label">{categoryOf(post)}</span><span className="reading-time"><IconClock size={14}/>{post.reading_time || post.readingTime || '5'} menit baca</span></div><h2><a href={`/posts/${id}`} onClick={(e)=>{e.preventDefault();navigate(`/posts/${id}`)}}>{titleOf(post)}</a></h2><p className="post-excerpt">{post.excerpt || post.summary || 'Sebuah perspektif baru, ide segar, dan cerita yang layak untuk dibaca.'}</p><div className="post-meta"><span className="avatar avatar-small">{(post.author?.username || post.author_name || 'D')[0].toUpperCase()}</span><span>{post.author?.username || post.author_name || 'Tim Delcom'}</span><span className="meta-dot">·</span><time>{dateOf(post.published_at || post.created_at)}</time></div></div></article>
+}

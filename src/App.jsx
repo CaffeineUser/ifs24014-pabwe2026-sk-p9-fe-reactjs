@@ -1,109 +1,110 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { IconArrowLeft, IconArrowRight, IconBook2, IconCheck, IconClock, IconEdit, IconExternalLink, IconFileText, IconFilter, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSparkles, IconSun, IconTrash, IconUsers, IconX } from '@tabler/icons-react'
+import { useEffect, useState } from 'react'
 import useTheme from './hooks/useTheme'
-import { apiRequest, clearSession, getToken, getUser, saveSession } from './helpers/apiHelper'
-
-const categories = ['Semua', 'Teknologi', 'Pendidikan', 'Gaya Hidup', 'Bisnis', 'Opini', 'Umum']
-const unwrap = (payload) => payload?.data?.data ?? payload?.data ?? payload
-const listOf = (value) => Array.isArray(value) ? value : value?.items ?? value?.posts ?? value?.users ?? []
-const titleOf = (post) => post?.title ?? 'Tanpa judul'
-const categoryOf = (post) => post?.category?.name ?? post?.category ?? 'Umum'
-const slugOf = (post) => post?.slug ?? post?.id
-const dateOf = (value) => value ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value)) : 'Belum diterbitkan'
-
-function usePath() {
-  const [path, setPath] = useState(`${location.pathname}${location.search}`)
-  useEffect(() => {
-    const onPop = () => setPath(`${location.pathname}${location.search}`)
-    addEventListener('popstate', onPop)
-    return () => removeEventListener('popstate', onPop)
-  }, [])
-  const navigate = useCallback((to) => { history.pushState({}, '', to); setPath(`${location.pathname}${location.search}`); scrollTo(0, 0) }, [])
-  return [path, navigate]
-}
-
-function Brand({ navigate }) { return <a className="brand" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }} aria-label="Delcom Blog, beranda"><span className="brand-mark"><IconBook2 size={21} stroke={2.2} /></span><span>delcom<span className="brand-light">blog</span><small>IDEAS WORTH SHARING</small></span></a> }
-
-function Header({ navigate, user, onLogout, theme, toggleTheme, publicPage = false }) {
-  return <header className={`topbar ${publicPage ? 'public-topbar' : ''}`}><div className="topbar-inner"><Brand navigate={navigate}/><nav className="topnav" aria-label="Navigasi utama">{publicPage ? <><a className="nav-active" href="/" onClick={(e)=>{e.preventDefault();navigate('/')}}>Jelajahi</a><a href="#tentang">Tentang</a></> : <><a href="/author" onClick={(e)=>{e.preventDefault();navigate('/author')}}>Workspace</a><a href="/" onClick={(e)=>{e.preventDefault();navigate('/')}}>Lihat blog</a></>}</nav><div className="top-actions"><button className="icon-button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}>{theme === 'dark' ? <IconSun/> : <IconMoon/>}</button>{user ? <><span className="user-chip"><span className="avatar">{(user.username||user.name||'P')[0].toUpperCase()}</span><span>{user.username || user.name || 'Penulis'}</span></span><button className="button button-quiet" onClick={onLogout}><IconLogout size={17}/> Keluar</button></> : <><button className="button button-quiet login-link" onClick={()=>navigate('/login')}>Masuk</button><button className="button button-dark" onClick={()=>navigate('/register')}>Mulai menulis <IconArrowRight size={17}/></button></>}</div></div></header>
-}
-
-function PostCard({ post, navigate, featured = false }) {
-  const id = slugOf(post)
-  const image = post.cover_image || post.image_url || post.cover || ''
-  return <article className={`post-card ${featured ? 'featured-card' : ''}`}><button className="card-image" onClick={()=>navigate(`/posts/${id}`)} aria-label={`Baca artikel ${titleOf(post)}`} style={image ? { backgroundImage: `linear-gradient(0deg,rgba(12,23,35,.2),transparent),url("${image}")` } : {}}><span className="image-orb">{featured ? '✳' : '✦'}</span>{featured && <span className="image-caption">CERITA PILIHAN EDITOR</span>}</button><div className="post-card-body"><div className="eyebrow-row"><span className="category-label">{categoryOf(post)}</span><span className="reading-time"><IconClock size={14}/>{post.reading_time || post.readingTime || '5'} menit baca</span></div><h2><a href={`/posts/${id}`} onClick={(e)=>{e.preventDefault();navigate(`/posts/${id}`)}}>{titleOf(post)}</a></h2><p className="post-excerpt">{post.excerpt || post.summary || 'Sebuah perspektif baru, ide segar, dan cerita yang layak untuk dibaca.'}</p><div className="post-meta"><span className="avatar avatar-small">{(post.author?.username || post.author_name || 'D')[0].toUpperCase()}</span><span>{post.author?.username || post.author_name || 'Tim Delcom'}</span><span className="meta-dot">·</span><time>{dateOf(post.published_at || post.created_at)}</time></div></div></article>
-}
-
-function PublicHome({ navigate, user, onLogout, theme, toggleTheme }) {
-  const [posts,setPosts]=useState([]),[query,setQuery]=useState(''),[category,setCategory]=useState('Semua'),[loading,setLoading]=useState(true),[error,setError]=useState('')
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial loading state is intentional while syncing with the API.
-  useEffect(()=>{let alive=true;setLoading(true);const params=new URLSearchParams();if(query.trim())params.set('q',query.trim());if(category!=='Semua')params.set('category',category);apiRequest(`/public/posts${params.size?`?${params}`:''}`,{auth:false}).then(r=>{if(alive){setPosts(listOf(unwrap(r)));setError('')}}).catch(e=>{if(alive){setPosts([]);setError(e.message)}}).finally(()=>alive&&setLoading(false));return()=>{alive=false}},[query,category])
-  const display = posts
-  return <><Header navigate={navigate} user={user} onLogout={onLogout} theme={theme} toggleTheme={toggleTheme} publicPage/><main><section className="hero"><div className="hero-inner"><div className="hero-copy"><div className="hero-kicker"><span className="sparkle">✳</span> RUANG BACA UNTUK IDE-IDE BESAR</div><h1>Setiap cerita punya<br/><em>tempatnya.</em></h1><p>Temukan perspektif baru dari para penulis kami. Cerita tentang teknologi, kehidupan, dan hal-hal yang membuat kita terus bertumbuh.</p><a className="hero-cta" href="#artikel">Temukan ceritamu <IconArrowRight size={18}/></a><div className="hero-note"><span className="note-line"/> Ditulis manusia, dibaca dengan rasa.</div></div><div className="hero-art" aria-hidden="true"><div className="art-sun"/><div className="art-shape art-shape-one"/><div className="art-shape art-shape-two"/><div className="art-shape art-shape-three"/><div className="art-paper"><span>FIELD NOTES</span><i>Ideas<br/>grow<br/>here.</i><b>✳</b></div><div className="art-stamp">EST.<br/>2026</div></div><div className="hero-index">01 <span/> 04</div></div></section><section className="content-wrap" id="artikel"><div className="section-heading"><div><span className="section-kicker">PILIHAN UNTUKMU</span><h2>Cerita terbaru<span className="heading-period">.</span></h2></div><span className="article-count">{posts.length.toString().padStart(2,'0')} CERITA</span></div><div className="discover-toolbar"><label className="search-box"><IconSearch size={19}/><input type="search" aria-label="Cari artikel" placeholder="Cari cerita, topik, atau penulis..." value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></label><div className="category-list" aria-label="Filter kategori">{categories.map((c)=><button key={c} className={`category-pill ${category===c?'selected':''}`} onClick={()=>setCategory(c)}>{c}</button>)}</div></div>{error&&<div className="notice" role="status">Belum dapat memuat artikel. {error}</div>}{loading?<div className="loading-grid" aria-label="Memuat artikel"><div/><div/><div/></div>:display.length?<div className="post-grid">{display.map((post,i)=><PostCard key={post.id||slugOf(post)||i} post={post} navigate={navigate} featured={i===0}/>)}</div>:<div className="empty-state"><span className="empty-icon"><IconBook2/></span><h3>{query?'Belum ada cerita yang cocok':'Halaman baru, cerita segera hadir.'}</h3><p>{query?'Coba kata kunci lain atau pilih kategori berbeda.':'Kami sedang menyiapkan tulisan-tulisan menarik untukmu.'}</p>{query&&<button className="button button-dark" onClick={()=>{setQuery('');setCategory('Semua')}}>Hapus pencarian</button>}</div>}</section><section className="newsletter" id="tentang"><div className="newsletter-mark">✳</div><div><span className="section-kicker">TENTANG DELCOM BLOG</span><h2>Ruang kecil untuk<br/><em>pemikiran besar.</em></h2></div><p>Delcom Blog adalah platform berbagi pengetahuan dan pengalaman. Kami percaya tulisan yang baik mampu membuka percakapan dan menggerakkan perubahan.</p><button className="newsletter-link" onClick={()=>navigate(user?'/author':'/register')}>{user?'Buka workspace':'Jadi penulis'} <IconArrowRight size={17}/></button></section></main><footer className="site-footer"><Brand navigate={navigate}/><span>© 2026 Delcom Blog. Ditulis dengan penuh perhatian.</span><a href="#artikel">Kembali ke atas ↑</a></footer></>
-}
-
-function Markdown({ content }) {
- const hostRef=useRef(null)
- useEffect(()=>{let cancelled=false,viewer;Promise.all([import('@toast-ui/editor'),import('@toast-ui/editor/dist/toastui-editor.css')]).then(([module])=>{if(cancelled)return;viewer=module.default.factory({el:hostRef.current,viewer:true,initialValue:content||'',usageStatistics:false});hostRef.current.querySelectorAll('a').forEach(link=>{link.rel='noopener noreferrer';if(link.target==='_blank')link.setAttribute('aria-label',`${link.textContent} (membuka tab baru)`)})}).catch(()=>{if(!cancelled&&hostRef.current)hostRef.current.textContent=content||''});return()=>{cancelled=true;viewer?.destroy()}},[content])
- return <div className="markdown-body toast-viewer" ref={hostRef} aria-label="Isi artikel" />
-}
-
-function ArticleDetail({ path,navigate,theme,toggleTheme,user,onLogout }) {
- const slug=decodeURIComponent(path.split('?')[0].split('/').pop());const [post,setPost]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
- useEffect(()=>{let live=true;apiRequest(`/public/posts/${encodeURIComponent(slug)}`,{auth:false}).then(r=>live&&setPost(unwrap(r))).catch(e=>live&&setError(e.message)).finally(()=>live&&setLoading(false));return()=>{live=false}},[slug])
- return <><Header navigate={navigate} user={user} onLogout={onLogout} theme={theme} toggleTheme={toggleTheme}/><main className="article-page">{loading?<div className="empty-state">Memuat artikel...</div>:error?<div className="empty-state"><h2>Artikel tidak ditemukan.</h2><p>{error}</p><button className="button button-dark" onClick={()=>navigate('/')}>Kembali ke beranda</button></div>:post&&<><button className="back-link" onClick={()=>navigate('/')}><IconArrowLeft size={17}/> Semua cerita</button><article className="article-full"><div className="article-topline"><span className="category-label">{categoryOf(post)}</span><span className="reading-time"><IconClock size={15}/>{post.reading_time||5} menit baca</span></div><h1>{titleOf(post)}</h1><p className="article-deck">{post.excerpt||post.summary}</p><div className="article-byline"><span className="avatar">{(post.author?.username||post.author_name||'D')[0].toUpperCase()}</span><div><strong>{post.author?.username||post.author_name||'Tim Delcom'}</strong><time>{dateOf(post.published_at)}</time></div></div>{(post.cover_image||post.image_url)&&<img className="article-cover" src={post.cover_image||post.image_url} alt={`Sampul artikel ${titleOf(post)}`} width="1400" height="680"/>}<Markdown content={post.content||post.body||post.markdown}/></article><div className="article-bottom"><span>Terima kasih telah membaca.</span><button className="button button-outline" onClick={()=>navigate('/')}>Jelajahi cerita lain <IconArrowRight size={16}/></button></div></>}</main><footer className="site-footer"><Brand navigate={navigate}/><span>© 2026 Delcom Blog</span></footer></>
-}
-
-function AuthPage({ mode,navigate,onSuccess }) {
- const [busy,setBusy]=useState(false),[error,setError]=useState(''),[values,setValues]=useState({username:'',email:'',password:''});const register=mode==='register'
- const submit=async(e)=>{e.preventDefault();setError('');setBusy(true);try{const payload={username:values.username.trim(),password:values.password};if(register)payload.email=values.email.trim();const result=unwrap(await apiRequest(`/auth/${register?'register':'login'}`,{method:'POST',body:payload,auth:false}));const token=result.token||result.access_token||result.accessToken;if(token){const user=result.user||result.profile||{username:values.username,email:values.email};saveSession(token,user);onSuccess(user)}else if(register){navigate('/login');setError('Akun berhasil dibuat. Silakan masuk.')}else setError('Respons login tidak memuat token sesi.')}catch(e){setError(e.message)}finally{setBusy(false)}}
- return <main className="auth-shell"><section className="auth-aside"><Brand navigate={navigate}/><div className="auth-quote"><span className="hero-kicker">✳ CERITA MEMPERLUAS DUNIA</span><h1>Ide baik<br/>layak untuk<br/><em>dibagikan.</em></h1><p>Ruang untuk menulis, membaca, dan bertumbuh bersama.</p><span className="auth-aside-foot">DELCOM BLOG · EST. 2026</span></div></section><section className="auth-main"><button className="auth-back" onClick={()=>navigate('/')}><IconArrowLeft size={17}/> Kembali ke beranda</button><div className="auth-form-wrap"><span className="section-kicker">{register?'MULAI PERJALANANMU':'SELAMAT DATANG KEMBALI'}</span><h2>{register?'Buat akun penulis':'Masuk ke akunmu'}<span className="heading-period">.</span></h2><p className="auth-subtitle">{register?'Bergabunglah dan bagikan ceritamu kepada dunia.':'Lanjutkan menulis dan temukan cerita baru.'}</p>{error&&<div className="form-error" role="alert">{error}</div>}<form onSubmit={submit}><label htmlFor={register?'register-username':'login-username'}>Username</label><input id={register?'register-username':'login-username'} autoComplete="username" required minLength="3" value={values.username} onChange={e=>setValues({...values,username:e.target.value})} placeholder="contoh: penulishebat"/>{register&&<><label htmlFor="register-email">Email</label><input id="register-email" type="email" autoComplete="email" required value={values.email} onChange={e=>setValues({...values,email:e.target.value})} placeholder="nama@email.com"/></>}<label htmlFor={register?'register-password':'login-password'}>Kata sandi</label><input id={register?'register-password':'login-password'} type="password" autoComplete={register?'new-password':'current-password'} required minLength={register?'8':undefined} value={values.password} onChange={e=>setValues({...values,password:e.target.value})} placeholder="Minimal 8 karakter"/><button id={register?'register-submit':'login-submit'} className="button button-dark auth-submit" disabled={busy}>{busy?'Mohon tunggu…':register?'Buat akun':'Masuk'} <IconArrowRight size={18}/></button></form><p className="auth-switch">{register?'Sudah punya akun?':'Belum punya akun?'} <button onClick={()=>navigate(register?'/login':'/register')}>{register?'Masuk':'Daftar sekarang'}</button></p></div><span className="auth-legal">Dengan melanjutkan, kamu menyetujui ketentuan penggunaan kami.</span></section></main>
-}
-
-function Modal({ title,children,onClose,onSubmit,submitText='Simpan',busy=false }) {
- const dialogRef=useRef(null),closeRef=useRef(onClose)
- useEffect(()=>{closeRef.current=onClose},[onClose])
- useEffect(()=>{const previous=document.activeElement;const focusable=()=>dialogRef.current?.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"]')||[];focusable()[0]?.focus();const key=e=>{if(e.key==='Escape'){closeRef.current();return}if(e.key==='Tab'){const items=focusable();if(!items.length)return;const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}};addEventListener('keydown',key);document.body.style.overflow='hidden';return()=>{removeEventListener('keydown',key);document.body.style.overflow='';previous?.focus?.()}},[])
- return <div className="modal-backdrop" role="presentation" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section ref={dialogRef} className="editor-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header className="modal-header"><div><span className="section-kicker">WORKSPACE PENULIS</span><h2 id="modal-title">{title}</h2></div><button className="icon-button" onClick={onClose} aria-label="Tutup dialog"><IconX/></button></header><form onSubmit={onSubmit} className="modal-form"><div className="modal-fields">{children}</div><footer className="modal-footer"><span>Markdown didukung untuk isi artikel.</span><div><button type="button" className="button button-outline" onClick={onClose}>Batal</button><button className="button button-dark" disabled={busy}>{busy?'Menyimpan…':submitText} <IconCheck size={17}/></button></div></footer></form></section></div>
-}
-
-function MarkdownEditor({ value, onChange }) {
- const mountRef=useRef(null),changeRef=useRef(onChange),initialValueRef=useRef(value)
- useEffect(()=>{changeRef.current=onChange},[onChange])
- useEffect(()=>{let cancelled=false;let editor;Promise.all([import('@toast-ui/editor'),import('@toast-ui/editor/dist/toastui-editor.css')]).then(([module])=>{if(cancelled)return;const Editor=module.default;editor=new Editor({el:mountRef.current,height:'100%',initialEditType:'markdown',previewStyle:'vertical',initialValue:initialValueRef.current,usageStatistics:false,autofocus:false,toolbarItems:[['heading','bold','italic'],['hr','quote'],['ul','ol'],['link','code']]});mountRef.current.querySelector('[contenteditable="true"]')?.setAttribute('aria-label','Isi artikel dalam Markdown');mountRef.current.querySelector('.CodeMirror textarea')?.setAttribute('aria-label','Isi artikel dalam Markdown');editor.on('change',()=>changeRef.current(editor.getMarkdown()))}).catch(()=>{ /* The editor is loaded only after opening the author workspace. */ });return()=>{cancelled=true;editor?.destroy()}},[])
- return <div className="markdown-editor-host" ref={mountRef} role="group" aria-label="Editor isi artikel Markdown" />
-}
-
-function AuthorDashboard({ user,navigate,onLogout,theme,toggleTheme }) {
- const [posts,setPosts]=useState([]),[stats,setStats]=useState({}),[busy,setBusy]=useState(true),[error,setError]=useState(''),[modal,setModal]=useState(''),[editing,setEditing]=useState(null),[saving,setSaving]=useState(false),[form,setForm]=useState({title:'',category:'Teknologi',excerpt:'',content:''}),[aiTopic,setAiTopic]=useState(''),[message,setMessage]=useState('')
- const load=useCallback(async()=>{setBusy(true);try{const [p,s]=await Promise.all([apiRequest('/posts'),apiRequest('/posts/stats')]);setPosts(listOf(unwrap(p)));setStats(unwrap(s)||{});setError('')}catch(e){setError(e.message)}finally{setBusy(false)}},[])
- // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data is loaded as the page mounts.
- useEffect(()=>{load()},[load]);const total=stats.total_posts??stats.total??posts.length,published=stats.published_posts??stats.published??posts.filter(p=>p.is_published||p.published).length,drafts=stats.draft_posts??stats.drafts??Math.max(0,total-published)
- const openEditor=(post=null)=>{setEditing(post);setForm(post?{title:post.title||'',category:categoryOf(post),excerpt:post.excerpt||'',content:post.content||post.body||''}:{title:'',category:'Teknologi',excerpt:'',content:''});setModal('editor')}
- const savePost=async(e)=>{e.preventDefault();if(!form.content.trim()){setError('Isi artikel wajib diisi.');return}setSaving(true);try{await apiRequest(editing?`/posts/${editing.id}`:'/posts',{method:editing?'PUT':'POST',body:{...form,title:form.title.trim(),excerpt:form.excerpt.trim(),content:form.content.trim()}});setModal('');await load()}catch(e){setError(e.message)}finally{setSaving(false)}}
- const toggle=async(post)=>{try{await apiRequest(`/posts/${post.id}/toggle-publish`,{method:'PATCH'});await load()}catch(e){setError(e.message)}}
- const remove=async(post)=>{if(!confirm(`Hapus artikel “${titleOf(post)}”?`))return;try{await apiRequest(`/posts/${post.id}`,{method:'DELETE'});await load()}catch(e){setError(e.message)}}
- const generate=async(e)=>{e.preventDefault();setSaving(true);try{const data=unwrap(await apiRequest('/posts/ai-generate',{method:'POST',body:{topic:aiTopic}}));const draft=data.post||data;setForm({title:draft.title||'',category:draft.category||'Teknologi',excerpt:draft.excerpt||'',content:draft.content||draft.markdown||''});setEditing(null);setModal('editor');setMessage('Draf AI siap ditinjau dan disunting.')}catch(e){setError(e.message)}finally{setSaving(false)}}
- return <><Header navigate={navigate} user={user} onLogout={onLogout} theme={theme} toggleTheme={toggleTheme}/><main className="dashboard"><div className="dashboard-heading"><div><div className="breadcrumb"><span>Workspace</span><IconArrowRight size={14}/><strong>Artikel saya</strong></div><h1>Selamat datang, {user.username||user.name||'Penulis'}<span className="heading-period">.</span></h1><p>Semua ide dan tulisanmu, tersusun di satu tempat.</p></div><div className="dashboard-actions"><button className="button button-outline" onClick={()=>{setModal('ai');setMessage('')}}><IconSparkles size={18}/> AI Generator</button><button className="button button-dark" onClick={()=>openEditor()}><IconPlus size={18}/> Tambah artikel</button></div></div>{error&&<div className="notice" role="alert">{error}</div>}{message&&<div className="success-notice" role="status">{message}</div>}<div className="stats-grid"><Stat icon={<IconFileText/>} label="Total artikel" value={total} detail="Semua tulisanmu"/><Stat icon={<IconCheck/>} label="Sudah terbit" value={published} detail="Siap dibaca publik"/><Stat icon={<IconEdit/>} label="Masih draf" value={drafts} detail="Lanjutkan kapan saja"/></div><section className="table-panel"><div className="table-heading"><div><span className="section-kicker">PUSTAKA KARYA</span><h2>Artikel saya <span className="heading-period">.</span></h2></div><button className="button button-quiet" onClick={load}><IconFilter size={17}/> Perbarui</button></div>{busy?<p className="table-empty">Memuat artikel…</p>:posts.length===0?<div className="table-empty"><span className="empty-icon"><IconFileText/></span><h3>Belum ada artikel</h3><p>Mulai tulis cerita pertamamu hari ini.</p><button className="button button-dark" onClick={()=>openEditor()}><IconPlus size={17}/> Tulis artikel</button></div>:<div className="table-scroll"><table><thead><tr><th scope="col">JUDUL ARTIKEL</th><th scope="col">KATEGORI</th><th scope="col">DIPERBARUI</th><th scope="col">STATUS</th><th scope="col"><span className="sr-only">Aksi</span></th></tr></thead><tbody>{posts.map(post=><tr key={post.id}><td><strong>{titleOf(post)}</strong><small>{post.excerpt||'—'}</small></td><td><span className="category-label">{categoryOf(post)}</span></td><td>{dateOf(post.updated_at||post.created_at)}</td><td><button className={`status-toggle ${post.is_published?'is-live':''}`} role="switch" aria-checked={!!post.is_published} onClick={()=>toggle(post)}><span/>{post.is_published?'Terbit':'Draf'}</button></td><td><div className="row-actions"><button className="icon-button" aria-label={`Edit ${titleOf(post)}`} onClick={()=>openEditor(post)}><IconEdit size={18}/></button><button className="icon-button danger-icon" aria-label={`Hapus ${titleOf(post)}`} onClick={()=>remove(post)}><IconTrash size={18}/></button></div></td></tr>)}</tbody></table></div>}</section></main><footer className="site-footer"><Brand navigate={navigate}/><span>© 2026 Delcom Blog</span><button className="footer-admin" onClick={()=>navigate('/admin')}>Admin <IconExternalLink size={14}/></button></footer>{modal==='editor'&&<Modal title={editing?'Sunting artikel':'Tulis artikel baru'} onClose={()=>setModal('')} onSubmit={savePost} submitText={editing?'Simpan perubahan':'Terbitkan draf'} busy={saving}><label htmlFor="post-title">Judul artikel</label><input id="post-title" required value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Judul yang mengundang rasa ingin tahu"/><div className="form-two"><div><label htmlFor="post-category">Kategori</label><select id="post-category" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{categories.slice(1).map(c=><option key={c}>{c}</option>)}</select></div><div><label htmlFor="post-excerpt">Ringkasan</label><input id="post-excerpt" value={form.excerpt} onChange={e=>setForm({...form,excerpt:e.target.value})} placeholder="Ceritakan isi artikel dalam satu kalimat"/></div></div><label htmlFor="post-content">Isi artikel <span className="label-hint">Markdown</span></label><MarkdownEditor value={form.content} onChange={content=>setForm(current=>({...current,content}))}/><textarea id="post-content" className="sr-only" required tabIndex={-1} value={form.content} onChange={()=>{}} aria-label="Isi artikel" /></Modal>}{modal==='ai'&&<Modal title="AI Blog Generator" onClose={()=>setModal('')} onSubmit={generate} submitText="Buat draf" busy={saving}><div className="ai-callout"><IconSparkles/><p>Berikan topik dan AI akan membantu menyiapkan draf. Tinjau kembali semua fakta sebelum diterbitkan.</p></div><label htmlFor="ai-topic">Topik artikel</label><textarea id="ai-topic" required rows="4" value={aiTopic} onChange={e=>setAiTopic(e.target.value)} placeholder="Contoh: bagaimana AI membantu pembelajaran personal di Indonesia"/></Modal>}</>
-}
-
-function Stat({icon,label,value,detail}) { return <article className="stat-card"><span className="stat-icon">{icon}</span><span className="stat-label">{label}</span><strong>{value}</strong><span className="stat-detail">{detail}</span></article> }
-
-function AdminDashboard({user,navigate,onLogout,theme,toggleTheme}) {
- const [users,setUsers]=useState([]),[posts,setPosts]=useState([]),[error,setError]=useState(''),[tab,setTab]=useState('users'),[loading,setLoading]=useState(true)
- useEffect(()=>{let live=true;Promise.all([apiRequest('/admin/users'),apiRequest('/admin/posts')]).then(([u,p])=>{if(live){setUsers(listOf(unwrap(u)));setPosts(listOf(unwrap(p)))}}).catch(e=>live&&setError(e.message)).finally(()=>live&&setLoading(false));return()=>{live=false}},[])
- return <><Header navigate={navigate} user={user} onLogout={onLogout} theme={theme} toggleTheme={toggleTheme}/><main className="dashboard"><div className="dashboard-heading"><div><div className="breadcrumb"><span>Administrasi</span><IconArrowRight size={14}/><strong>Overview</strong></div><h1>Panel administrasi<span className="heading-period">.</span></h1><p>Pantau komunitas penulis dan seluruh publikasi Delcom Blog.</p></div><span className="admin-badge"><IconSettings size={16}/> ADMINISTRATOR</span></div>{error&&<div className="notice" role="alert">{error}</div>}<div className="stats-grid"><Stat icon={<IconUsers/>} label="Pengguna" value={users.length} detail="Anggota komunitas"/><Stat icon={<IconFileText/>} label="Semua artikel" value={posts.length} detail="Dari seluruh penulis"/><Stat icon={<IconCheck/>} label="Artikel terbit" value={posts.filter(p=>p.is_published).length} detail="Terlihat oleh publik"/></div><section className="table-panel"><div className="table-heading"><div><span className="section-kicker">DIREKTORI DELCOM</span><h2>Komunitas & artikel<span className="heading-period">.</span></h2></div><div className="tab-switch" role="tablist" aria-label="Data administrasi"><button role="tab" aria-selected={tab==='users'} onClick={()=>setTab('users')}>Pengguna</button><button role="tab" aria-selected={tab==='posts'} onClick={()=>setTab('posts')}>Artikel</button></div></div>{loading?<p className="table-empty">Memuat data...</p>:tab==='users'?users.length?<div className="table-scroll"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>ROLE</th><th>ARTIKEL</th><th>TERBIT</th></tr></thead><tbody>{users.map(u=><tr key={u.id}><td>#{u.id}</td><td><strong>{u.username}</strong></td><td>{u.email}</td><td><span className={`role-label ${u.role==='admin'?'role-admin':''}`}>{u.role||'author'}</span></td><td>{u.total_posts??u.post_count??0}</td><td>{u.published_posts??u.published_count??0}</td></tr>)}</tbody></table></div>:<p className="table-empty">Belum ada pengguna.</p>:posts.length?<div className="table-scroll"><table><thead><tr><th>ARTIKEL</th><th>PENULIS</th><th>KATEGORI</th><th>STATUS</th><th>TANGGAL</th></tr></thead><tbody>{posts.map(p=><tr key={p.id}><td><strong>{titleOf(p)}</strong></td><td>{p.author?.username||p.author_name||'—'}</td><td>{categoryOf(p)}</td><td><span className={`role-label ${p.is_published?'role-live':''}`}>{p.is_published?'Terbit':'Draf'}</span></td><td>{dateOf(p.published_at||p.created_at)}</td></tr>)}</tbody></table></div>:<p className="table-empty">Belum ada artikel.</p>}</section></main></>
-}
+import usePath from './hooks/usePath'
+import { clearSession, getToken, getUser } from './helpers/apiHelper'
+import { logoutUser } from './features/auth/api/authApi'
+import PublicHome from './features/blog/PublicHome'
+import ArticleDetail from './features/blog/ArticleDetail'
+import AuthPage from './features/auth/AuthPage'
+import AuthorDashboard from './features/author/AuthorDashboard'
+import AdminDashboard from './features/admin/AdminDashboard'
 
 export default function App() {
- const [path,navigate]=usePath();const {theme,toggleTheme}=useTheme();const [user,setUser]=useState(()=>getToken()?getUser():null)
- const logout=async()=>{try{await apiRequest('/auth/logout',{method:'POST'})}catch{ /* Local session cleanup must still complete if the API is offline. */ }clearSession();setUser(null);navigate('/')}
- useEffect(()=>{const expire=()=>{setUser(null);navigate('/login')};addEventListener('auth:expired',expire);return()=>removeEventListener('auth:expired',expire)},[navigate])
- const route=path.split('?')[0];const detail=route.startsWith('/posts/');const isPrivate=route==='/author'||route==='/admin'
- useEffect(()=>{if(isPrivate&&!user)navigate('/login');else if(route==='/admin'&&user&&user.role!=='admin')navigate('/author')},[isPrivate,route,user,navigate])
- if(route==='/login'||route==='/register')return <AuthPage mode={route.slice(1)} navigate={navigate} onSuccess={u=>{setUser(u);navigate(u.role==='admin'?'/admin':'/author')}}/>
- if(route==='/author')return user?<AuthorDashboard user={user} navigate={navigate} onLogout={logout} theme={theme} toggleTheme={toggleTheme}/>:null
- if(route==='/admin')return user?.role==='admin'?<AdminDashboard user={user} navigate={navigate} onLogout={logout} theme={theme} toggleTheme={toggleTheme}/>:null
- if(detail)return <ArticleDetail path={path} navigate={navigate} theme={theme} toggleTheme={toggleTheme} user={user} onLogout={logout}/>
- return <PublicHome navigate={navigate} user={user} onLogout={logout} theme={theme} toggleTheme={toggleTheme}/>
+  const [path, navigate] = usePath()
+  const { theme, toggleTheme } = useTheme()
+  const [user, setUser] = useState(() => (getToken() ? getUser() : null))
+
+  const logout = async () => {
+    try {
+      await logoutUser()
+    } catch {
+      // Bersihkan sesi lokal walaupun API sedang tidak dapat dijangkau.
+    }
+
+    clearSession()
+    setUser(null)
+    navigate('/')
+  }
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setUser(null)
+      navigate('/login')
+    }
+
+    addEventListener('auth:expired', handleExpiredSession)
+    return () => removeEventListener('auth:expired', handleExpiredSession)
+  }, [navigate])
+
+  const route = path.split('?')[0]
+  const isArticleDetail = route.startsWith('/posts/')
+  const requiresAuthentication = route === '/author' || route === '/admin'
+
+  useEffect(() => {
+    if (requiresAuthentication && !user) {
+      navigate('/login')
+    } else if (route === '/admin' && user && user.role !== 'admin') {
+      navigate('/author')
+    }
+  }, [requiresAuthentication, route, user, navigate])
+
+  if (route === '/login' || route === '/register') {
+    return (
+      <AuthPage
+        mode={route.slice(1)}
+        navigate={navigate}
+        onSuccess={(authenticatedUser) => {
+          setUser(authenticatedUser)
+          navigate(authenticatedUser.role === 'admin' ? '/admin' : '/author')
+        }}
+      />
+    )
+  }
+
+  if (route === '/author') {
+    return user ? (
+      <AuthorDashboard
+        user={user}
+        navigate={navigate}
+        onLogout={logout}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    ) : null
+  }
+
+  if (route === '/admin') {
+    return user?.role === 'admin' ? (
+      <AdminDashboard
+        user={user}
+        navigate={navigate}
+        onLogout={logout}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    ) : null
+  }
+
+  if (isArticleDetail) {
+    return (
+      <ArticleDetail
+        path={path}
+        navigate={navigate}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        user={user}
+        onLogout={logout}
+      />
+    )
+  }
+
+  return (
+    <PublicHome
+      navigate={navigate}
+      user={user}
+      onLogout={logout}
+      theme={theme}
+      toggleTheme={toggleTheme}
+    />
+  )
 }

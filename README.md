@@ -1,16 +1,61 @@
-# React + Vite
+# Delcom Blog — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React/Vite untuk Delcom Blog. Backend berada di repository `ifs24014-pabwe2026-sk-p9-be-golang-gin` dan menyediakan REST API pada port `8081`.
 
-Currently, two official plugins are available:
+## Struktur kode
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `src/App.jsx`: sinkronisasi rute SPA, sesi pengguna, dan pemilihan halaman.
+- `src/components/`: komponen UI bersama seperti header, brand, modal, dan kartu statistik.
+- `src/features/<fitur>/api/`: permintaan backend yang khusus untuk fitur `blog`, `auth`, `author`, atau `admin`.
+- `src/features/<fitur>/components/`: komponen UI khusus fitur, seperti kartu artikel, viewer/editor Markdown, halaman autentikasi, dan dashboard.
+- `src/features/<fitur>/`: halaman dan alur tiap fitur; halaman tetap mengorkestrasi API dan komponennya.
+- `src/helpers/`: helper API dan pemrosesan data blog.
+- `src/hooks/`: hook reusable seperti tema dan navigasi browser.
 
-## React Compiler
+## Menjalankan lokal
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Pastikan PostgreSQL dan backend aktif. Dari folder backend, jalankan:
 
-## Expanding the ESLint configuration
+   ```powershell
+   go run cmd/server/main.go
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+   Backend harus dapat diakses di `http://localhost:8081`.
+
+2. Dari folder frontend, salin konfigurasi contoh dan jalankan Vite:
+
+   ```powershell
+   Copy-Item .env.example .env
+   npm install
+   npm run dev
+   ```
+
+   Buka `http://localhost:5174`. Jika `VITE_API_URL` kosong, Vite meneruskan request `/api` ke backend lokal pada port `8081`.
+
+3. Cek koneksi API atau buka dokumentasi backend:
+
+   - `http://localhost:5174/api/public/categories`
+   - `http://localhost:8081/swagger/index.html`
+
+## Menghubungkan saat deployment
+
+Atur environment variable **pada hosting frontend sebelum build**:
+
+```env
+VITE_API_URL=https://alamat-backend-anda
+```
+
+Isi dengan base URL backend tanpa akhiran `/api` dan tanpa slash terakhir. Frontend akan memanggil endpoint seperti `https://alamat-backend-anda/api/public/posts`. Setelah menambahkan atau mengubah environment variable, jalankan deployment ulang.
+
+Backend harus tersedia melalui HTTPS dan mengizinkan origin domain frontend melalui CORS. Hosting frontend juga perlu mengarahkan rute SPA (contohnya `/posts/*`, `/author`, `/admin`, `/login`, dan `/register`) kembali ke `index.html` agar halaman bisa dibuka langsung atau di-refresh.
+
+Jangan commit `.env` atau memasukkan secret backend ke variable `VITE_*`; nilai tersebut dapat dibaca dari browser. `.env.example` aman untuk dibagikan dan `.env` sudah diabaikan Git.
+
+## Build produksi
+
+```powershell
+npm run build
+npm run preview
+```
+
+Hasil build berada di `dist/`.
